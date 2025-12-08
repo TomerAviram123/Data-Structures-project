@@ -7,9 +7,6 @@
 
 
 """A class represnting a node in an AVL tree"""
-from sympy import false
-from sympy.codegen.ast import continue_
-
 
 class AVLNode(object):
     """Constructor, you are allowed to add more fields.
@@ -670,3 +667,4 @@ if __name__ == "__main__":
     print(T.validate_heights())
     print(T.validate_balance_factors())
     T.print_tree()
+
