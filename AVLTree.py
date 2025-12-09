@@ -146,7 +146,7 @@ class AVLTree(object):
         """
 
         #simple insertion
-        x, e = self.simple_insert(key, val)
+        x, e = self.simple_insert(self.root, key, val)
         self.set_heights_from_node_up(x)
         h = 0
 
@@ -702,3 +702,4 @@ if __name__ == "__main__":
     print(T.validate_balance_factors())
     T.print_tree()
     """
+
