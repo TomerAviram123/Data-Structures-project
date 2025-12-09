@@ -217,13 +217,20 @@ class AVLTree(object):
         y, original_y_parent = self.simple_delete(node)
 
         #balance Tree
-
         if original_y_parent is not node:
             start_node = original_y_parent
         else:
             start_node = y
 
         self.tree_balancer(start_node)
+
+        #update tree max, size
+        self._size -= 1
+        if self._max_node == node:
+            iter_node = self.root
+            while iter_node.right.is_real_node():
+                iter_node = iter_node.right
+            self._max_node = iter_node
 
         return
 
@@ -297,7 +304,7 @@ class AVLTree(object):
         criminal_node = start_node
         continue_ = True
 
-        while criminal_node is not None and continue_:
+        while criminal_node is not None and criminal_node.is_real_node() and continue_:
 
             criminal_node_bf = criminal_node.left.height - criminal_node.right.height
 
@@ -398,8 +405,13 @@ class AVLTree(object):
 
     def simple_delete(self, node):
 
+        if node is None or not node.is_real_node():
+            return self.virtual_node, None
+
         ##first case - node is leaf
-        y_node, original_y_parent = node.left, node.left.parent
+
+        if node is not self.root and node.parent is not None:
+            y_node, original_y_parent = node.parent, node.parent.left
 
         if not node.left.is_real_node() and not node.right.is_real_node():
 
@@ -436,7 +448,7 @@ class AVLTree(object):
 
             while iter_node.left.is_real_node():
                 iter_node = iter_node.left
-            y, original_y_parent = iter_node, iter_node.parent
+            y_node, original_y_parent = iter_node, iter_node.parent
             iter_node.right.parent = iter_node.parent
             iter_node.parent.left = iter_node.right
 
@@ -454,7 +466,7 @@ class AVLTree(object):
 
             self.set_heights_from_node_up(height_check_node)
 
-        return y, original_y_parent
+        return y_node, original_y_parent
 
 
     #====================================================================
@@ -649,7 +661,6 @@ class AVLTree(object):
     # ====================================================================
 
 if __name__ == "__main__":
-    """
     ##regular insertions test
     T = AVLTree()
     T.insert(15, "15")
@@ -668,7 +679,7 @@ if __name__ == "__main__":
     T.insert(8, "8")
     T.insert(5, "5")
     T.print_tree()
-    
+    """
     ##finger insertions test
     T2 = AVLTree()
     T2.finger_insert(15, "15")
@@ -686,13 +697,13 @@ if __name__ == "__main__":
     T2.finger_insert(6, "6")
     T2.finger_insert(8, "8")
     T2.finger_insert(5, "5")
-    
+    """
     #delete test
-    T2.print_tree()
-    a,b = T2.search(7)
-    T2.delete(a)
-    T2.print_tree()
-    
+    T.print_tree()
+    a,b = T.search(7)
+    T.delete(a)
+    T.print_tree()
+    """
     ##other tests
     print(T.size())
     print(T.avl_to_array())
@@ -702,4 +713,3 @@ if __name__ == "__main__":
     print(T.validate_balance_factors())
     T.print_tree()
     """
-
