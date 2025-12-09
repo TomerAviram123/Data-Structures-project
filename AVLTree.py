@@ -7,7 +7,6 @@
 
 
 """A class represnting a node in an AVL tree"""
-
 class AVLNode(object):
     """Constructor, you are allowed to add more fields.
 
@@ -49,6 +48,7 @@ class AVLTree(object):
         self.root = None
         self._max_node = None
         self._size = 0
+        self.virtual_node = AVLNode()
 
 
     def search(self, key):
@@ -145,49 +145,18 @@ class AVLTree(object):
         and h is the number of PROMOTE cases during the AVL rebalancing
         """
 
-        #-------------- simple insertion --------------------
+        #simple insertion
         x, e = self.simple_insert(key, val)
         self.set_heights_from_node_up(x)
         h = 0
-        #---------------------------------------------------
 
-        #------------- update tree max, size ------------------
+        #update tree max, size
         self._size += 1
         if self._max_node is None or self._max_node.key < x.key:
             self._max_node = x
-        #-----------------------------------------------------
 
-        #------------- Balance Tree ----------------------------
-        criminal_node = x
-        child_node = None
-        grandchild_node = None
-        continue_loop = True
-
-        while criminal_node != self.root and continue_loop:
-
-            grandchild_node = child_node
-            child_node = criminal_node
-            criminal_node = criminal_node.parent
-
-            criminal_node_bf = criminal_node.left.height - criminal_node.right.height
-            child_node_bf = child_node.left.height - child_node.right.height
-
-            if abs(criminal_node_bf) == 2: # found the place to do the balance
-                continue_loop = False
-
-                if criminal_node_bf == -2 and child_node_bf == -1: #left rotation
-                    self.left_rotation(criminal_node, child_node)
-                    h = 1
-                elif criminal_node_bf == -2 and child_node_bf == 1: #right then left rotation
-                    self.right_then_left_rotation(criminal_node, child_node, grandchild_node)
-                    h = 2
-                elif criminal_node_bf == 2 and child_node_bf == -1: #right then left rotation
-                    self.left_then_right_rotation(criminal_node, child_node, grandchild_node)
-                    h = 2
-                elif criminal_node_bf == 2 and child_node_bf == 1: #right rotation
-                    self.right_rotation(criminal_node, child_node)
-                    h = 1
-        #---------------------------------------------------------------
+        #Balance Tree
+        h = self.tree_balancer(x, "One Balance")
 
         return x, e, h
 
@@ -206,50 +175,33 @@ class AVLTree(object):
         and h is the number of PROMOTE cases during the AVL rebalancing
         """
 
+        # Traverse Up
+        arcs = 0
+        node = self.root
+        if self.root is not None:
+            continue_ = True
+            node = self._max_node
+            while node != self.root and continue_:
+                if key < node.parent.key:
+                    node = node.parent
+                else:
+                    continue_ = False
+                arcs += 1
 
-        #-------------- simple insertion --------------------
-        x, e = self.finger_simple_insert(key, val)
+        # Simple insert from the common node
+        x, e = self.simple_insert(node, key, val)
+        e += arcs
         self.set_heights_from_node_up(x)
-        h = 0
-        #---------------------------------------------------
 
-        #------------- update tree max, size ------------------
+        #update tree max, size
         self._size += 1
         if self._max_node is None or self._max_node.key < x.key:
             self._max_node = x
-        #-----------------------------------------------------
 
-        #------------- Balance Tree ----------------------------
-        criminal_node = x
-        child_node = None
-        grandchild_node = None
-        continue_loop = True
+        #Balance Tree
+        h = 0
+        h = self.tree_balancer(x, "One Balance")
 
-        while criminal_node != self.root and continue_loop:
-
-            grandchild_node = child_node
-            child_node = criminal_node
-            criminal_node = criminal_node.parent
-
-            criminal_node_bf = criminal_node.left.height - criminal_node.right.height
-            child_node_bf = child_node.left.height - child_node.right.height
-
-            if abs(criminal_node_bf) == 2: # found the place to do the balance
-                continue_loop = False
-
-                if criminal_node_bf == -2 and child_node_bf == -1: #left rotation
-                    self.left_rotation(criminal_node, child_node)
-                    h = 1
-                elif criminal_node_bf == -2 and child_node_bf == 1: #right then left rotation
-                    self.right_then_left_rotation(criminal_node, child_node, grandchild_node)
-                    h = 2
-                elif criminal_node_bf == 2 and child_node_bf == -1: #right then left rotation
-                    self.left_then_right_rotation(criminal_node, child_node, grandchild_node)
-                    h = 2
-                elif criminal_node_bf == 2 and child_node_bf == 1: #right rotation
-                    self.right_rotation(criminal_node, child_node)
-                    h = 1
-        #---------------------------------------------------------------
 
         return x, e, h
 
@@ -260,6 +212,19 @@ class AVLTree(object):
         @type node: AVLNode
         @pre: node is a real pointer to a node in self
         """
+        #Simle Delete of the node
+
+        y, original_y_parent = self.simple_delete(node)
+
+        #balance Tree
+
+        if original_y_parent is not node:
+            start_node = original_y_parent
+        else:
+            start_node = y
+
+        self.tree_balancer(start_node)
+
         return
 
 
@@ -325,49 +290,153 @@ class AVLTree(object):
 
     # ==================== HELPER FUNCTIONS =============================
 
+    def tree_balancer(self, start_node, arg='Default'):
+
+        h = 0
+
+        criminal_node = start_node
+        continue_ = True
+
+        while criminal_node is not None and continue_:
+
+            criminal_node_bf = criminal_node.left.height - criminal_node.right.height
+
+            if abs(criminal_node_bf) == 2:  # found the place to do the balance
+
+                if arg == 'One Balance':
+                    continue_ = False
+
+                if criminal_node_bf == -2:  # check the right son
+
+                    child_node = criminal_node.right
+                    child_node_bf = child_node.left.height - child_node.right.height
+
+                    if child_node_bf == -1:  # left rotation
+                        self.left_rotation(criminal_node, child_node)
+                        h = 1
+
+                    elif child_node_bf in [0, 1]:  # right then left rotation
+                        grandchild_node = child_node.right
+                        self.right_then_left_rotation(criminal_node, child_node, grandchild_node)
+                        h = 2
+
+                elif criminal_node_bf == 2:  # check the left son
+
+                    child_node = criminal_node.left
+                    child_node_bf = child_node.left.height - child_node.right.height
+
+                    if child_node_bf in [0, -1]:  # right then left rotation
+
+                        grandchild_node = child_node.right
+                        self.left_then_right_rotation(criminal_node, child_node, grandchild_node)
+                        h = 2
+
+                    elif child_node_bf == 1:  # right rotation
+
+                        self.right_rotation(criminal_node, child_node)
+                        h = 1
+
+            criminal_node = criminal_node.parent
+
+        return h
+
+
     def set_heights_from_node_up(self, node, arg='Default'):
 
         counter = node.height
+
         while node.parent is not None:
             counter += 1
             if node.parent.height < counter or arg == 'Rotation':
                 node.parent.height = counter
-            if node.parent.height < max(node.parent.left.height, node.parent.right.height):
-                node.parent.height = counter
+
             node = node.parent
 
         return
 
 
-     def simple_delete(self, node):
+    def simple_insert(self, start_node, key, val):
+
+        arcs = 0
+
+        if self.root is None:
+            new_node = AVLNode(key, val)
+            self.root = new_node
+            self.root.height = 0
+            self.root.right = self.virtual_node
+            self.root.left = self.virtual_node
+            self._max_node = self.root
+        else:
+            node = start_node
+            while node.is_real_node():
+                arcs += 1
+                if key > node.key:
+                    if node.right.is_real_node():
+                        node = node.right
+                    else:
+                        new_node = AVLNode(key, val)
+                        new_node.parent = node
+                        new_node.height = 0
+                        new_node.left = self.virtual_node
+                        new_node.right = self.virtual_node
+                        node.right = new_node
+                        break
+                else:
+                    if node.left.is_real_node():
+                        node = node.left
+                    else:
+                        new_node = AVLNode(key, val)
+                        new_node.parent = node
+                        new_node.height = 0
+                        new_node.left = self.virtual_node
+                        new_node.right = self.virtual_node
+                        node.left = new_node
+                        break
+
+        return new_node, arcs
+
+
+    def simple_delete(self, node):
 
         ##first case - node is leaf
+        y_node, original_y_parent = node.left, node.left.parent
+
         if not node.left.is_real_node() and not node.right.is_real_node():
+
             if node.parent.left == node:
-                node.parent.left = AVLNode()
+                node.parent.left = self.virtual_node
             elif node.parent.right == node:
-                node.parent.right = AVLNode()
+                node.parent.right = self.virtual_node
+
             self.set_heights_from_node_up(node.parent)
 
         ##second case - node has one child
-        elif node.right.is_real_node() and not node.left.is_real_node():  # has right child
+        elif node.right.is_real_node() and not node.left.is_real_node(): # has right child
+
             if node.parent.left == node:
                 node.parent.left = node.right
             elif node.parent.right == node:
                 node.parent.right = node.right
+
             self.set_heights_from_node_up(node.parent)
+
         elif node.left.is_real_node() and not node.right.is_real_node():  # has left child
+
             if node.parent.left == node:
                 node.parent.left = node.left
             elif node.parent.right == node:
                 node.parent.right = node.left
+
             self.set_heights_from_node_up(node.parent)
 
         ##third case - node has two children
         elif node.right.is_real_node() and node.left.is_real_node():
+
             iter_node = node.right
+
             while iter_node.left.is_real_node():
                 iter_node = iter_node.left
+            y, original_y_parent = iter_node, iter_node.parent
             iter_node.right.parent = iter_node.parent
             iter_node.parent.left = iter_node.right
 
@@ -375,107 +444,18 @@ class AVLTree(object):
                 node.parent.left = iter_node
             elif node.parent.right == node:
                 node.parent.right = iter_node
+
             height_check_node = iter_node.parent.right
             iter_node.parent = node.parent
             iter_node.left = node.left
             iter_node.right = node.right
             node.left.parent = iter_node
             node.right.parent = iter_node
+
             self.set_heights_from_node_up(height_check_node)
 
-        return
+        return y, original_y_parent
 
-
-    def simple_insert(self, key, val):
-
-        arcs = 0
-
-        if self.root is None:
-            new_node = AVLNode(key, val)
-            self.root = new_node
-            self.root.height = 0
-            self.root.right = AVLNode()
-            self.root.left = AVLNode()
-            self._max_node = self.root
-        else:
-            node = self.root
-            while node.is_real_node():
-                arcs += 1
-                if key > node.key:
-                    if node.right.is_real_node():
-                        node = node.right
-                    else:
-                        new_node = AVLNode(key, val)
-                        new_node.parent = node
-                        new_node.height = 0
-                        new_node.left = AVLNode()
-                        new_node.right = AVLNode()
-                        node.right = new_node
-                        break
-                else:
-                    if node.left.is_real_node():
-                        node = node.left
-                    else:
-                        new_node = AVLNode(key, val)
-                        new_node.parent = node
-                        new_node.height = 0
-                        new_node.left = AVLNode()
-                        new_node.right = AVLNode()
-                        node.left = new_node
-                        break
-
-        return new_node, arcs
-
-
-    def finger_simple_insert(self, key, val):
-
-        arcs = 0
-
-        if self.root is None:
-            new_node = AVLNode(key, val)
-            self.root = new_node
-            self.root.height = 0
-            self.root.right = AVLNode()
-            self.root.left = AVLNode()
-            self._max_node = self.root
-        else:
-            # ======== Traverse Up ======================
-            continue_ = True
-            node = self._max_node
-            while node != self.root and continue_:
-                if key < node.parent.key:
-                    node = node.parent
-                else:
-                    continue_ = False
-                arcs += 1
-
-            # ======== Traverse Down ======================
-            while node.is_real_node():
-                arcs += 1
-                if key > node.key:
-                    if node.right.is_real_node():
-                        node = node.right
-                    else:
-                        new_node = AVLNode(key, val)
-                        new_node.parent = node
-                        new_node.height = 0
-                        new_node.left = AVLNode()
-                        new_node.right = AVLNode()
-                        node.right = new_node
-                        break
-                else:
-                    if node.left.is_real_node():
-                        node = node.left
-                    else:
-                        new_node = AVLNode(key, val)
-                        new_node.parent = node
-                        new_node.height = 0
-                        new_node.left = AVLNode()
-                        new_node.right = AVLNode()
-                        node.left = new_node
-                        break
-
-        return new_node, arcs
 
     #====================================================================
 
@@ -489,7 +469,7 @@ class AVLTree(object):
         self._create_in_order_list(x.right, lst)
 
 
-    def print_tree(self, node=None, indent="", last=True):
+    def print_tree(self, node =None, indent="", last=True):
         if node is None:
             node = self.root
 
@@ -669,7 +649,7 @@ class AVLTree(object):
     # ====================================================================
 
 if __name__ == "__main__":
-
+    """
     ##regular insertions test
     T = AVLTree()
     T.insert(15, "15")
@@ -688,7 +668,7 @@ if __name__ == "__main__":
     T.insert(8, "8")
     T.insert(5, "5")
     T.print_tree()
-
+    
     ##finger insertions test
     T2 = AVLTree()
     T2.finger_insert(15, "15")
@@ -706,8 +686,13 @@ if __name__ == "__main__":
     T2.finger_insert(6, "6")
     T2.finger_insert(8, "8")
     T2.finger_insert(5, "5")
+    
+    #delete test
     T2.print_tree()
-
+    a,b = T2.search(7)
+    T2.delete(a)
+    T2.print_tree()
+    
     ##other tests
     print(T.size())
     print(T.avl_to_array())
@@ -716,5 +701,4 @@ if __name__ == "__main__":
     print(T.validate_heights())
     print(T.validate_balance_factors())
     T.print_tree()
-
-
+    """
