@@ -325,14 +325,63 @@ class AVLTree(object):
 
     # ==================== HELPER FUNCTIONS =============================
 
-    def set_heights_from_node_up(self, node, arg='Insertion'):
+    def set_heights_from_node_up(self, node, arg='Default'):
 
         counter = node.height
         while node.parent is not None:
             counter += 1
             if node.parent.height < counter or arg == 'Rotation':
                 node.parent.height = counter
+            if node.parent.height < max(node.parent.left.height, node.parent.right.height):
+                node.parent.height = counter
             node = node.parent
+
+        return
+
+
+     def simple_delete(self, node):
+
+        ##first case - node is leaf
+        if not node.left.is_real_node() and not node.right.is_real_node():
+            if node.parent.left == node:
+                node.parent.left = AVLNode()
+            elif node.parent.right == node:
+                node.parent.right = AVLNode()
+            self.set_heights_from_node_up(node.parent)
+
+        ##second case - node has one child
+        elif node.right.is_real_node() and not node.left.is_real_node():  # has right child
+            if node.parent.left == node:
+                node.parent.left = node.right
+            elif node.parent.right == node:
+                node.parent.right = node.right
+            self.set_heights_from_node_up(node.parent)
+        elif node.left.is_real_node() and not node.right.is_real_node():  # has left child
+            if node.parent.left == node:
+                node.parent.left = node.left
+            elif node.parent.right == node:
+                node.parent.right = node.left
+            self.set_heights_from_node_up(node.parent)
+
+        ##third case - node has two children
+        elif node.right.is_real_node() and node.left.is_real_node():
+            iter_node = node.right
+            while iter_node.left.is_real_node():
+                iter_node = iter_node.left
+            iter_node.right.parent = iter_node.parent
+            iter_node.parent.left = iter_node.right
+
+            if node.parent.left == node:
+                node.parent.left = iter_node
+            elif node.parent.right == node:
+                node.parent.right = iter_node
+            height_check_node = iter_node.parent.right
+            iter_node.parent = node.parent
+            iter_node.left = node.left
+            iter_node.right = node.right
+            node.left.parent = iter_node
+            node.right.parent = iter_node
+            self.set_heights_from_node_up(height_check_node)
 
         return
 
@@ -667,4 +716,5 @@ if __name__ == "__main__":
     print(T.validate_heights())
     print(T.validate_balance_factors())
     T.print_tree()
+
 
