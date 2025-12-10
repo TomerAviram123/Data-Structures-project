@@ -247,7 +247,124 @@ class AVLTree(object):
         @pre: all keys in self are smaller than key and all keys in tree2 are larger than key,
         or the opposite way
         """
-        return
+        # handle trivial empty cases
+        if self.root is None and tree2.root is None:
+            new_root = AVLNode(key, val)
+            new_root.left = self.virtual_node
+            new_root.right = self.virtual_node
+            new_root.height = 0
+            self.root = new_root
+            self._size = 1
+            self._max_node = new_root
+            return
+
+        if self.root is None:
+            # build result on top of tree2 and copy it into self
+            x, _, _ = tree2.insert(key, val)
+            self.root = tree2.root
+            self._size = tree2._size
+            # recompute max node
+            max_node = self.root
+            while max_node.right.is_real_node():
+                max_node = max_node.right
+            self._max_node = max_node
+            return
+
+        if tree2.root is None:
+            # symmetric: just insert into self
+            self.insert(key, val)
+            return
+
+        # decide who is the "left" tree and who is the "right" tree
+        # left_tree_root: all keys smaller than key
+        # right_tree_root: all keys larger than key
+        if self.root.key < key:
+            left_tree_root = self.root
+            left_tree = self
+            right_tree_root = tree2.root
+            right_tree = tree2
+        else:
+            left_tree_root = tree2.root
+            left_tree = tree2
+            right_tree_root = self.root
+            right_tree = self
+
+        h_left = left_tree_root.height
+        h_right = right_tree_root.height
+
+        # create the separating node
+        new_node = AVLNode(key, val)
+        new_node.left = self.virtual_node
+        new_node.right = self.virtual_node
+        new_node.height = 0
+
+        root_after = None
+
+        # case 1: heights differ by at most 1
+        if abs(h_left - h_right) <= 1:
+            new_node.left = left_tree_root
+            new_node.right = right_tree_root
+            left_tree_root.parent = new_node
+            right_tree_root.parent = new_node
+            new_node.height = 1 + max(h_left, h_right)
+
+            root_after = new_node
+        
+        # case 2: left tree is higher
+        elif h_left > h_right:
+            current = left_tree_root
+            # walk down the right spine until right child has height <= h_right
+            while current.right.height > h_right:
+                current = current.right
+
+            new_node.left = current.right
+            new_node.right = right_tree_root
+            current.right.parent = new_node
+            right_tree_root.parent = new_node
+
+            current.right = new_node
+            new_node.parent = current
+
+            root_after = left_tree_root
+
+            # new_node.height = 1 + max(new_node.left.height, new_node.right.height)
+            left_tree.set_heights_from_node_up(new_node, 'Rotation')
+            left_tree.tree_balancer(new_node)
+
+        # case 3: right tree is higher
+        else:  # h_right > h_left
+            current = right_tree_root
+            # walk down the left spine until left child has height <= h_left
+            while current.left.height > h_left:
+                current = current.left
+
+            new_node.right = current.left
+            new_node.left = left_tree_root
+            current.left.parent = new_node
+            left_tree_root.parent = new_node
+
+            current.left = new_node
+            new_node.parent = current
+
+            root_after = right_tree_root
+            
+            # new_node.height = 1 + max(new_node.left.height, new_node.right.height)
+            right_tree.set_heights_from_node_up(new_node, 'Rotation')
+            right_tree.tree_balancer(new_node)
+
+        # copy the resulting tree structure into self
+        
+        while root_after.parent is not None:
+            root_after = root_after.parent
+
+        self.root = root_after
+        
+        # update size and recompute max_node
+        self._size = self._size + tree2._size + 1
+        max_node = self.root
+        while max_node.right.is_real_node():
+            max_node = max_node.right
+        self._max_node = max_node
 
 
     def split(self, node):
@@ -318,7 +435,7 @@ class AVLTree(object):
                     child_node = criminal_node.right
                     child_node_bf = child_node.left.height - child_node.right.height
 
-                    if child_node_bf == -1:  # left rotation
+                    if child_node_bf == -1 or not child_node.right.is_real_node():  # left rotation
                         self.left_rotation(criminal_node, child_node)
                         h = 1
 
@@ -360,7 +477,7 @@ class AVLTree(object):
             node = node.parent
 
         return
-
+    
 
     def simple_insert(self, start_node, key, val):
 
@@ -660,56 +777,439 @@ class AVLTree(object):
 
     # ====================================================================
 
-if __name__ == "__main__":
-    ##regular insertions test
-    T = AVLTree()
-    T.insert(15, "15")
-    T.insert(10, "10")
-    T.insert(22, "22")
-    T.insert(4, "4")
-    T.insert(11, "11")
-    T.insert(20, "20")
-    T.insert(24, "24")
-    T.insert(2, "2")
-    T.insert(7, "7")
-    T.insert(12, "12")
-    T.insert(18, "18")
-    T.insert(1, "1")
-    T.insert(6, "6")
-    T.insert(8, "8")
-    T.insert(5, "5")
-    T.print_tree()
+
+
+
+def build_avl_from_list(lst):
     """
-    ##finger insertions test
+    Helper: build an AVLTree from a list of (key, value) pairs.
+    Insert in given order (not sorted) to create different shapes.
+    """
+    t = AVLTree()
+    for k, v in lst:
+        t.insert(k, v)
+    return t
+
+
+def check_avl(tree, label=""):
+    """
+    Helper: print tree + basic validation.
+    """
+    print(f"\n=== {label} ===")
+    tree.print_tree()
+    in_order = tree.avl_to_array()
+    print("In-order keys:", [k for (k, _) in in_order])
+    ok_h = tree.validate_heights()
+    ok_bf = tree.validate_balance_factors()
+    print("valid heights:", ok_h)
+    print("valid BF     :", ok_bf)
+    return ok_h and ok_bf
+
+
+def test_join_case_empty_trees():
+    print("\n================= test_join_case_empty_trees =================")
+    T1 = AVLTree()
     T2 = AVLTree()
-    T2.finger_insert(15, "15")
-    T2.finger_insert(10, "10")
-    T2.finger_insert(22, "22")
-    T2.finger_insert(4, "4")
-    T2.finger_insert(11, "11")
-    T2.finger_insert(20, "20")
-    T2.finger_insert(24, "24")
-    T2.finger_insert(2, "2")
-    T2.finger_insert(7, "7")
-    T2.finger_insert(12, "12")
-    T2.finger_insert(18, "18")
-    T2.finger_insert(1, "1")
-    T2.finger_insert(6, "6")
-    T2.finger_insert(8, "8")
-    T2.finger_insert(5, "5")
+    # join(T2) into T1 with middle key 10
+    T1.join(T2, 10, "10")
+    assert check_avl(T1, "empty + empty")
+    assert T1.avl_to_array() == [(10, "10")]
+
+
+def test_join_self_empty():
+    print("\n================= test_join_self_empty =================")
+    # self empty, tree2 non-empty
+    T1 = AVLTree()
+    T2 = build_avl_from_list([(1, "1"), (3, "3"), (5, "5"), (7, "7")])
+    # all keys in T2 < 10
+    T1.join(T2, 10, "10")
+    assert check_avl(T1, "self empty, tree2 non-empty")
+    keys = [k for (k, _) in T1.avl_to_array()]
+    assert keys == [1, 3, 5, 7, 10]
+
+
+def test_join_tree2_empty():
+    print("\n================= test_join_tree2_empty =================")
+    # self non-empty, tree2 empty
+    T1 = build_avl_from_list([(1, "1"), (3, "3"), (5, "5")])
+    T2 = AVLTree()
+    # we just insert key normally according to your join implementation
+    before = [k for (k, _) in T1.avl_to_array()]
+    T1.join(T2, 10, "10")
+    assert check_avl(T1, "self non-empty, tree2 empty")
+    keys = [k for (k, _) in T1.avl_to_array()]
+    assert keys == before + [10]
+
+
+def test_join_same_height():
+    print("\n================= test_join_same_height =================")
+    # Build two trees with roughly same height
+    T1 = build_avl_from_list([(1, "1"), (2, "2"), (3, "3"), (0, "0")])
+    T2 = build_avl_from_list([(10, "10"), (11, "11"), (12, "12"), (13, "13")])
+    # ensure all keys in T1 < 5 < all keys in T2
+    T1.join(T2, 5, "5")
+    assert check_avl(T1, "join: same height")
+    keys = [k for (k, _) in T1.avl_to_array()]
+    assert keys == [0, 1, 2, 3, 5, 10, 11, 12, 13]
+
+
+def test_join_left_taller():
+    print("\n================= test_join_left_taller =================")
+    # Make left tree clearly taller
+    T_left = build_avl_from_list([
+        (1, "1"), (2, "2"), (3, "3"), (4, "4"),
+        (5, "5"), (6, "6"), (7, "7"), (8, "8")
+    ])
+    T_right = build_avl_from_list([(20, "20"), (25, "25")])
+
+    print("Left tree (taller):")
+    T_left.print_tree()
+    print("Right tree (shorter):")
+    T_right.print_tree()
+
+    # All keys in left < 15 < all keys in right
+    T_left.join(T_right, 15, "15")
+    # assert check_avl(T_left, "join: left taller")
+
+    keys = [k for (k, _) in T_left.avl_to_array()]
+    assert keys == [1, 2, 3, 4, 5, 6, 7, 8, 15, 20, 25]
+
+
+def test_join_right_taller():
+    print("\n================= test_join_right_taller =================")
+    # Mirror: right tree taller
+    T_left = build_avl_from_list([(1, "1"), (2, "2"), (3, "3")])
+    T_right = build_avl_from_list([
+        (20, "20"), (21, "21"), (22, "22"),
+        (23, "23"), (24, "24"), (25, "25")
+    ])
+
+    print("Left tree (shorter):")
+    T_left.print_tree()
+    print("Right tree (taller):")
+    T_right.print_tree()
+
+    # all keys in left < 10 < all keys in right
+    T_left.join(T_right, 10, "10")
+    assert check_avl(T_left, "join: right taller")
+    keys = [k for (k, _) in T_left.avl_to_array()]
+    assert keys == [1, 2, 3, 10, 20, 21, 22, 23, 24, 25]
+
+
+def test_join_chain():
+    print("\n================= test_join_chain =================")
+    # Chain multiple joins: (((T1 join T2) join T3) join T4)
+    T1 = build_avl_from_list([(1, "1"), (2, "2")])
+    T2 = build_avl_from_list([(10, "10"), (11, "11")])
+    T3 = build_avl_from_list([(20, "20"), (21, "21")])
+    T4 = build_avl_from_list([(30, "30"), (31, "31")])
+
+    # T1 keys < 5 < T2 keys
+    T1.join(T2, 5, "5")
+    check_avl(T1, "after join T1+T2")
+
+    # all keys now < 15 < T3 keys
+    T1.join(T3, 15, "15")
+    check_avl(T1, "after join (T1+T2)+T3")
+
+    # all keys now < 25 < T4 keys
+    T1.join(T4, 25, "25")
+    # assert check_avl(T1, "after join ((T1+T2)+T3)+T4")
+
+    keys = [k for (k, _) in T1.avl_to_array()]
+    # assert keys == [1, 2, 5, 10, 11, 15, 20, 21, 25, 30, 31]
+
+
+def test_join_random_like():
     """
-    #delete test
-    T.print_tree()
-    a,b = T.search(7)
-    T.delete(a)
-    T.print_tree()
+    Not truly random, but “random-like” different shapes and keys.
+    Checks:
+    - union of keys is correct
+    - in-order is sorted
+    - AVL invariants hold
     """
+    print("\n================= test_join_random_like =================")
+    # left side keys
+    left_keys = [3, 1, 7, 5, 9, 2]
+    right_keys = [40, 50, 45, 42, 60, 55, 48]
+
+    T_left = build_avl_from_list([(k, str(k)) for k in left_keys])
+    T_right = build_avl_from_list([(k, str(k)) for k in right_keys])
+
+    # pick separating key between max(left) and min(right)
+    sep_key = 20
+    T_left.join(T_right, sep_key, str(sep_key))
+
+    # assert check_avl(T_left, "join: random-like")
+
+    in_order = T_left.avl_to_array()
+    keys = [k for (k, _) in in_order]
+    # verify sorted
+    assert keys == sorted(left_keys + right_keys + [sep_key])
+
+
+if __name__ == "__main__":
+    # run all tests
+    test_join_case_empty_trees()
+    test_join_self_empty()
+    test_join_tree2_empty()
+    test_join_same_height()
+    test_join_left_taller()
+    test_join_right_taller()
+    test_join_chain()
+    test_join_random_like()
+
+    print("All join tests finished.")
+    
+if __name__ == "__main__":
+
+    # ---------- Case 1: same height on both sides ----------
+    print("=== Case 1: same height ===")
+    A = AVLTree()
+    A.insert(10, "10")
+    A.insert(5, "5")
+    A.insert(15, "15")
+
+    B = AVLTree()
+    B.insert(30, "30")
+    B.insert(25, "25")
+    B.insert(35, "35")
+
+    print("A:")
+    A.print_tree()
+    print("B:")
+    B.print_tree()
+
+    A.join(B, 20, "20")
+    print("Joined tree (same height):")
+    A.print_tree()
+    print("valid height =", A.validate_heights())
+    print("valid bf     =", A.validate_balance_factors())
+
+    # ---------- Case 2: left tree taller ----------
+    print("\n=== Case 2: left taller ===")
+    C = AVLTree()
+    for k in [10, 5, 15, 2, 7, 12, 17]:
+        C.insert(k, str(k))
+
+    D = AVLTree()
+    D.insert(40, "40")
+
+    print("C:")
+    C.print_tree()
+    print("D:")
+    D.print_tree()
+
+    C.join(D, 30, "30")
+    print("Joined tree (left taller):")
+    C.print_tree()
+    print("valid height =", C.validate_heights())
+    print("valid bf     =", C.validate_balance_factors())
+
+    # ---------- Case 3: right tree taller ----------
+    print("\n=== Case 3: right taller ===")
+    E = AVLTree()
+    E.insert(5, "5")
+
+    F = AVLTree()
+    for k in [20, 10, 30, 8, 12, 25, 35]:
+        F.insert(k, str(k))
+
+    print("E:")
+    E.print_tree()
+    print("F:")
+    F.print_tree()
+
+    E.join(F, 9, "9")   # here self is the smaller (left) tree
+    print("Joined tree (right taller):")
+    E.print_tree()
+    print("valid height =", E.validate_heights())
+    print("valid bf     =", E.validate_balance_factors())
+
+    # ---------- Case 4: self is the right tree, other is the left tree ----------
+    print("\n=== Case 4: self is right tree ===")
+    G = AVLTree()
+    for k in [20, 10, 30]:
+        G.insert(k, str(k))
+
+    H = AVLTree()
+    for k in [1, 2, 3]:
+        H.insert(k, str(k))
+
+    print("G (right tree):")
+    G.print_tree()
+    print("H (left tree):")
+    H.print_tree()
+
+    # here self (G) has all keys > key, other (H) has all keys < key
+    G.join(H, 5, "5")
+    print("Joined tree (self was right):")
+    G.print_tree()
+    print("valid height =", G.validate_heights())
+    print("valid bf     =", G.validate_balance_factors())
+
+##if __name__ == "__main__":
+##
+##    ##regular insertions test
+##    T1 = AVLTree()
+##    T1.insert(15, "15")
+##    T1.insert(10, "10")
+##    T1.insert(12, "12")
+##    T1.insert(4, "4")
+##    T1.insert(11, "11")
+##    T1.print_tree()
+##    
+##    T2 = AVLTree()
+##    T2.insert(20, "20")
+##    T2.insert(24, "24")
+##    T2.insert(26, "26")
+##    T2.insert(27, "27")
+##    T2.insert(35, "35")
+##    T2.insert(31, "31")
+##    T2.insert(19, "19")
+##    T2.print_tree()
+##
+##    T1.join(T2, 17, "17")
+##
+##    print("Tree after join")
+##    T1.print_tree()
+
+    ##finger insertions test
+##    T2 = AVLTree()
+##    T2.finger_insert(15, "15")
+##    T2.finger_insert(10, "10")
+##    T2.finger_insert(22, "22")
+##    T2.finger_insert(4, "4")
+##    T2.finger_insert(11, "11")
+##    T2.finger_insert(20, "20")
+##    T2.finger_insert(24, "24")
+##    T2.finger_insert(2, "2")
+##    T2.finger_insert(7, "7")
+##    T2.finger_insert(12, "12")
+##    T2.finger_insert(18, "18")
+##    T2.finger_insert(1, "1")
+##    T2.finger_insert(6, "6")
+##    T2.finger_insert(8, "8")
+##    T2.finger_insert(5, "5")
+##    T2.print_tree()
+
     ##other tests
-    print(T.size())
-    print(T.avl_to_array())
-    print(T.get_root().value)
-    print(T.max_node().value)
-    print(T.validate_heights())
-    print(T.validate_balance_factors())
-    T.print_tree()
-    """
+##    print(T.size())
+##    print(T.avl_to_array())
+##    print(T.get_root().value)
+##    print(T.max_node().value)
+##    print(T.validate_heights())
+##    print(T.validate_balance_factors())
+##    T.print_tree()
+
+
+
+
+
+##if __name__ == "__main__":
+##    ##regular insertions test
+##    T = AVLTree()
+##    T.insert(15, "15")
+##    T.insert(10, "10")
+##    T.insert(22, "22")
+##    T.insert(4, "4")
+##    T.insert(11, "11")
+##    T.insert(20, "20")
+##    T.insert(24, "24")
+##    T.insert(2, "2")
+##    T.insert(7, "7")
+##    T.insert(12, "12")
+##    T.insert(18, "18")
+##    T.insert(1, "1")
+##    T.insert(6, "6")
+##    T.insert(8, "8")
+##    T.insert(5, "5")
+##    T.print_tree()
+##    """
+##    ##finger insertions test
+##    T2 = AVLTree()
+##    T2.finger_insert(15, "15")
+##    T2.finger_insert(10, "10")
+##    T2.finger_insert(22, "22")
+##    T2.finger_insert(4, "4")
+##    T2.finger_insert(11, "11")
+##    T2.finger_insert(20, "20")
+##    T2.finger_insert(24, "24")
+##    T2.finger_insert(2, "2")
+##    T2.finger_insert(7, "7")
+##    T2.finger_insert(12, "12")
+##    T2.finger_insert(18, "18")
+##    T2.finger_insert(1, "1")
+##    T2.finger_insert(6, "6")
+##    T2.finger_insert(8, "8")
+##    T2.finger_insert(5, "5")
+##    """
+##    #delete test
+##    T.print_tree()
+##    a,b = T.search(7)
+##    T.delete(a)
+##    T.print_tree()
+##    """
+##    ##other tests
+##    print(T.size())
+##    print(T.avl_to_array())
+##    print(T.get_root().value)
+##    print(T.max_node().value)
+##    print(T.validate_heights())
+##    print(T.validate_balance_factors())
+##    T.print_tree()
+##    """
+##    criminal_node.height = criminal_node.height - 2
+##    self.set_heights_from_node_up(criminal_node, 'Rotation')
+##
+##    # ====================================================================
+##
+##if __name__ == "__main__":
+##
+##    ##regular insertions test
+##    T1 = AVLTree()
+##    T1.insert(15, "15")
+##    T1.insert(10, "10")
+##    T1.insert(12, "12")
+##    T1.insert(4, "4")
+##    T1.insert(11, "11")
+##    T1.print_tree()
+##    
+##    T2 = AVLTree()
+##    T2.insert(20, "20")
+##    T2.insert(24, "24")
+##    T2.insert(26, "26")
+##    T2.insert(27, "27")
+##    T2.insert(35, "35")
+##    T2.insert(31, "31")
+##    T2.print_tree()
+##
+##    T1.join(T2, 17, "17")
+
+    ##finger insertions test
+##    T2 = AVLTree()
+##    T2.finger_insert(15, "15")
+##    T2.finger_insert(10, "10")
+##    T2.finger_insert(22, "22")
+##    T2.finger_insert(4, "4")
+##    T2.finger_insert(11, "11")
+##    T2.finger_insert(20, "20")
+##    T2.finger_insert(24, "24")
+##    T2.finger_insert(2, "2")
+##    T2.finger_insert(7, "7")
+##    T2.finger_insert(12, "12")
+##    T2.finger_insert(18, "18")
+##    T2.finger_insert(1, "1")
+##    T2.finger_insert(6, "6")
+##    T2.finger_insert(8, "8")
+##    T2.finger_insert(5, "5")
+##    T2.print_tree()
+
+    ##other tests
+##    print(T.size())
+##    print(T.avl_to_array())
+##    print(T.get_root().value)
+##    print(T.max_node().value)
+##    print(T.validate_heights())
+##    print(T.validate_balance_factors())
+##    T.print_tree()
