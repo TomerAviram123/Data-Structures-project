@@ -467,13 +467,8 @@ class AVLTree(object):
 
     def set_heights_from_node_up(self, node, arg='Default'):
 
-        counter = node.height
-
-        while node.parent is not None:
-            counter += 1
-            if node.parent.height < counter or arg == 'Rotation':
-                node.parent.height = counter
-
+        while node is not None:
+            node.height = max(node.left.height, node.right.height) + 1
             node = node.parent
 
         return
@@ -1213,3 +1208,4 @@ if __name__ == "__main__":
 ##    print(T.validate_heights())
 ##    print(T.validate_balance_factors())
 ##    T.print_tree()
+
