@@ -319,17 +319,24 @@ class AVLTree(object):
 
             new_node.left = current.right
             new_node.right = right_tree_root
-            current.right.parent = new_node
-            right_tree_root.parent = new_node
+
+            if current.right.is_real_node():
+                current.right.parent = new_node
+            if right_tree_root.is_real_node():
+                right_tree_root.parent = new_node
 
             current.right = new_node
             new_node.parent = current
 
-            root_after = left_tree_root
-
-            # new_node.height = 1 + max(new_node.left.height, new_node.right.height)
-            left_tree.set_heights_from_node_up(new_node, 'Rotation')
+            # Update heights and balance
+            new_node.height = 1 + max(new_node.left.height, new_node.right.height)
+            left_tree.set_heights_from_node_up(new_node)
             left_tree.tree_balancer(new_node)
+    
+            # Find root by traversing up from new_node
+            root_after = new_node
+            while root_after.parent is not None:
+                root_after = root_after.parent
 
         # case 3: right tree is higher
         else:  # h_right > h_left
@@ -340,23 +347,25 @@ class AVLTree(object):
 
             new_node.right = current.left
             new_node.left = left_tree_root
-            current.left.parent = new_node
-            left_tree_root.parent = new_node
+
+            if current.left.is_real_node():
+                current.left.parent = new_node
+            if left_tree_root.is_real_node():
+                left_tree_root.parent = new_node
 
             current.left = new_node
             new_node.parent = current
 
-            root_after = right_tree_root
-            
-            # new_node.height = 1 + max(new_node.left.height, new_node.right.height)
-            right_tree.set_heights_from_node_up(new_node, 'Rotation')
+            # Update heights and balance
+            new_node.height = 1 + max(new_node.left.height, new_node.right.height)
+            right_tree.set_heights_from_node_up(new_node)
             right_tree.tree_balancer(new_node)
 
-        # copy the resulting tree structure into self
+            # Find root by traversing up from new_node
+            root_after = new_node
+            while root_after.parent is not None:
+                root_after = root_after.parent
         
-        while root_after.parent is not None:
-            root_after = root_after.parent
-
         self.root = root_after
         
         # update size and recompute max_node
@@ -440,7 +449,7 @@ class AVLTree(object):
                         h = 1
 
                     elif child_node_bf in [0, 1]:  # right then left rotation
-                        grandchild_node = child_node.right
+                        grandchild_node = child_node.left
                         self.right_then_left_rotation(criminal_node, child_node, grandchild_node)
                         h = 2
 
@@ -465,9 +474,9 @@ class AVLTree(object):
         return h
 
 
-    def set_heights_from_node_up(self, node, arg='Default'):
+    def set_heights_from_node_up(self, node):
 
-        while node is not None:
+        while node is not None and node.is_real_node():
             node.height = max(node.left.height, node.right.height) + 1
             node = node.parent
 
@@ -678,11 +687,12 @@ class AVLTree(object):
 
         criminal_node.right = child_node.left
         child_node.left = criminal_node
-
-        criminal_node.left.parent = criminal_node
+        
+        if criminal_node.right.is_real_node():
+            criminal_node.right.parent = criminal_node
 
         criminal_node.height = criminal_node.height - 2
-        self.set_heights_from_node_up(criminal_node, 'Rotation')
+        self.set_heights_from_node_up(criminal_node)
 
         return
 
@@ -698,10 +708,13 @@ class AVLTree(object):
 
         grandchild_node.parent = criminal_node.parent
 
-        criminal_node.right = grandchild_node.right
-        child_node.left = grandchild_node.left
-        criminal_node.right.parent = criminal_node
-        child_node.left.parent = child_node
+        criminal_node.right = grandchild_node.left
+        child_node.left = grandchild_node.right
+        
+        if criminal_node.right.is_real_node():
+            criminal_node.right.parent = criminal_node
+        if child_node.left.is_real_node():
+            child_node.left.parent = child_node
 
         grandchild_node.right = child_node
         grandchild_node.left = criminal_node
@@ -710,9 +723,9 @@ class AVLTree(object):
         child_node.parent = grandchild_node
 
         criminal_node.height = criminal_node.height - 2
-        self.set_heights_from_node_up(criminal_node, 'Rotation')
+        self.set_heights_from_node_up(criminal_node)
         child_node.height = child_node.height - 1
-        self.set_heights_from_node_up(child_node, 'Rotation')
+        self.set_heights_from_node_up(child_node)
 
         return
 
@@ -730,8 +743,10 @@ class AVLTree(object):
 
         criminal_node.left = grandchild_node.right
         child_node.right = grandchild_node.left
-        criminal_node.left.parent = criminal_node
-        child_node.right.parent = child_node
+        if criminal_node.left.is_real_node():
+            criminal_node.left.parent = criminal_node
+        if child_node.right.is_real_node():
+            child_node.right.parent = child_node
 
         grandchild_node.left = child_node
         grandchild_node.right = criminal_node
@@ -740,9 +755,9 @@ class AVLTree(object):
         child_node.parent = grandchild_node
 
         criminal_node.height = criminal_node.height - 2
-        self.set_heights_from_node_up(criminal_node, 'Rotation')
+        self.set_heights_from_node_up(criminal_node)
         child_node.height = child_node.height - 1
-        self.set_heights_from_node_up(child_node, 'Rotation')
+        self.set_heights_from_node_up(child_node)
 
         return
 
@@ -763,10 +778,11 @@ class AVLTree(object):
         criminal_node.left = child_node.right
         child_node.right = criminal_node
 
-        criminal_node.left.parent = criminal_node
+        if criminal_node.left.is_real_node():
+            criminal_node.left.parent = criminal_node
 
         criminal_node.height = criminal_node.height - 2
-        self.set_heights_from_node_up(criminal_node, 'Rotation')
+        self.set_heights_from_node_up(criminal_node)
 
         return
 
@@ -864,7 +880,7 @@ def test_join_left_taller():
 
     # All keys in left < 15 < all keys in right
     T_left.join(T_right, 15, "15")
-    # assert check_avl(T_left, "join: left taller")
+    assert check_avl(T_left, "join: left taller")
 
     keys = [k for (k, _) in T_left.avl_to_array()]
     assert keys == [1, 2, 3, 4, 5, 6, 7, 8, 15, 20, 25]
@@ -909,10 +925,10 @@ def test_join_chain():
 
     # all keys now < 25 < T4 keys
     T1.join(T4, 25, "25")
-    # assert check_avl(T1, "after join ((T1+T2)+T3)+T4")
+    assert check_avl(T1, "after join ((T1+T2)+T3)+T4")
 
     keys = [k for (k, _) in T1.avl_to_array()]
-    # assert keys == [1, 2, 5, 10, 11, 15, 20, 21, 25, 30, 31]
+    assert keys == [1, 2, 5, 10, 11, 15, 20, 21, 25, 30, 31]
 
 
 def test_join_random_like():
@@ -935,7 +951,7 @@ def test_join_random_like():
     sep_key = 20
     T_left.join(T_right, sep_key, str(sep_key))
 
-    # assert check_avl(T_left, "join: random-like")
+    assert check_avl(T_left, "join: random-like")
 
     in_order = T_left.avl_to_array()
     keys = [k for (k, _) in in_order]
