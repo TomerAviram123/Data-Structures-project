@@ -7,6 +7,8 @@
 
 
 """A class represnting a node in an AVL tree"""
+
+
 class AVLNode(object):
     """Constructor, you are allowed to add more fields.
 
@@ -50,7 +52,6 @@ class AVLTree(object):
         self._size = 0
         self.virtual_node = AVLNode()
 
-
     def search(self, key):
         """searches for a node in the dictionary corresponding to the key (starting at the root)
 
@@ -88,7 +89,6 @@ class AVLTree(object):
 
         return None, -1
 
-
     def finger_search(self, key):
         """searches for a node in the dictionary corresponding to the key, starting at the max
 
@@ -101,7 +101,7 @@ class AVLTree(object):
         node = self._max_node
         arcs = 1
 
-        #======== Traverse Up ======================
+        # ======== Traverse Up ======================
         continue_ = True
         print(node.key)
         while node != self.root:
@@ -113,7 +113,7 @@ class AVLTree(object):
                 break
             arcs += 1
 
-        #======== Traverse down ======================
+        # ======== Traverse down ======================
         while node.is_real_node():
             if node.key == key:
                 return node, arcs
@@ -131,7 +131,6 @@ class AVLTree(object):
 
         return None, -1
 
-
     def insert(self, key, val):
         """inserts a new node into the dictionary with corresponding key and value, starting at the max
         @type key: int
@@ -145,21 +144,20 @@ class AVLTree(object):
         and h is the number of PROMOTE cases during the AVL rebalancing
         """
 
-        #simple insertion
+        # simple insertion
         x, e = self.simple_insert(self.root, key, val)
         self.set_heights_from_node_up(x)
         h = 0
 
-        #update tree max, size
+        # update tree max, size
         self._size += 1
         if self._max_node is None or self._max_node.key < x.key:
             self._max_node = x
 
-        #Balance Tree
+        # Balance Tree
         h = self.tree_balancer(x, "One Balance")
 
         return x, e, h
-
 
     def finger_insert(self, key, val):
         """inserts a new node into the dictionary with corresponding key and value, starting at the max
@@ -193,18 +191,16 @@ class AVLTree(object):
         e += arcs
         self.set_heights_from_node_up(x)
 
-        #update tree max, size
+        # update tree max, size
         self._size += 1
         if self._max_node is None or self._max_node.key < x.key:
             self._max_node = x
 
-        #Balance Tree
+        # Balance Tree
         h = 0
         h = self.tree_balancer(x, "One Balance")
 
-
         return x, e, h
-
 
     def delete(self, node):
         """deletes node from the dictionary
@@ -212,11 +208,11 @@ class AVLTree(object):
         @type node: AVLNode
         @pre: node is a real pointer to a node in self
         """
-        #Simle Delete of the node
+        # Simle Delete of the node
 
         y, original_y_parent = self.simple_delete(node)
 
-        #balance Tree
+        # balance Tree
         if original_y_parent is not node:
             start_node = original_y_parent
         else:
@@ -224,7 +220,7 @@ class AVLTree(object):
 
         self.tree_balancer(start_node)
 
-        #update tree max, size
+        # update tree max, size
         self._size -= 1
         if self._max_node == node:
             iter_node = self.root
@@ -233,7 +229,6 @@ class AVLTree(object):
             self._max_node = iter_node
 
         return
-
 
     def join(self, tree2, key, val):
         """joins self with item and another AVLTree
@@ -309,7 +304,7 @@ class AVLTree(object):
             new_node.height = 1 + max(h_left, h_right)
 
             root_after = new_node
-        
+
         # case 2: left tree is higher
         elif h_left > h_right:
             current = left_tree_root
@@ -332,7 +327,7 @@ class AVLTree(object):
             new_node.height = 1 + max(new_node.left.height, new_node.right.height)
             left_tree.set_heights_from_node_up(new_node)
             left_tree.tree_balancer(new_node)
-    
+
             # Find root by traversing up from new_node
             root_after = new_node
             while root_after.parent is not None:
@@ -365,16 +360,15 @@ class AVLTree(object):
             root_after = new_node
             while root_after.parent is not None:
                 root_after = root_after.parent
-        
+
         self.root = root_after
-        
+
         # update size and recompute max_node
         self._size = self._size + tree2._size + 1
         max_node = self.root
         while max_node.right.is_real_node():
             max_node = max_node.right
         self._max_node = max_node
-
 
     def split(self, node):
         """splits the dictionary at a given node
@@ -389,7 +383,6 @@ class AVLTree(object):
         """
         return None, None
 
-
     def avl_to_array(self):
         """returns an array representing dictionary
         @rtype: list
@@ -400,14 +393,12 @@ class AVLTree(object):
 
         return array
 
-
     def max_node(self):
         """returns the number of items in dictionary
         @rtype: int
         @returns: the number of items in dictionary
         """
         return self._max_node
-
 
     def size(self):
         """returns the root of the tree representing the dictionary
@@ -416,14 +407,12 @@ class AVLTree(object):
         """
         return self._size
 
-
     def get_root(self):
         return self.root
 
-
     # ==================== HELPER FUNCTIONS =============================
 
-    def tree_balancer(self, start_node, arg='Default'):
+    def tree_balancer(self, start_node, arg="Default"):
 
         h = 0
 
@@ -436,7 +425,7 @@ class AVLTree(object):
 
             if abs(criminal_node_bf) == 2:  # found the place to do the balance
 
-                if arg == 'One Balance':
+                if arg == "One Balance":
                     continue_ = False
 
                 if criminal_node_bf == -2:  # check the right son
@@ -473,7 +462,6 @@ class AVLTree(object):
 
         return h
 
-
     def set_heights_from_node_up(self, node):
 
         while node is not None and node.is_real_node():
@@ -481,7 +469,6 @@ class AVLTree(object):
             node = node.parent
 
         return
-    
 
     def simple_insert(self, start_node, key, val):
 
@@ -523,7 +510,6 @@ class AVLTree(object):
 
         return new_node, arcs
 
-
     def simple_delete(self, node):
 
         if node is None or not node.is_real_node():
@@ -544,7 +530,7 @@ class AVLTree(object):
             self.set_heights_from_node_up(node.parent)
 
         ##second case - node has one child
-        elif node.right.is_real_node() and not node.left.is_real_node(): # has right child
+        elif node.right.is_real_node() and not node.left.is_real_node():  # has right child
 
             if node.parent.left == node:
                 node.parent.left = node.right
@@ -589,10 +575,9 @@ class AVLTree(object):
 
         return y_node, original_y_parent
 
+    # ====================================================================
 
-    #====================================================================
-
-    #========== Validating and testing functions ========================
+    # ========== Validating and testing functions ========================
 
     def _create_in_order_list(self, x, lst=None):
         if not x.is_real_node():
@@ -601,8 +586,7 @@ class AVLTree(object):
         lst.append((x.key, x.value))
         self._create_in_order_list(x.right, lst)
 
-
-    def print_tree(self, node =None, indent="", last=True):
+    def print_tree(self, node=None, indent="", last=True):
         if node is None:
             node = self.root
 
@@ -625,11 +609,9 @@ class AVLTree(object):
             new_indent = indent + ("    " if last else "│   ")
             self.print_tree(node.left, new_indent, True)
 
-
     def validate_heights(self):
         ok, _ = self._validate_heights_rec(self.root)
         return ok
-
 
     def _validate_heights_rec(self, node):
         if not node.is_real_node():
@@ -645,10 +627,8 @@ class AVLTree(object):
 
         return (left_ok and right_ok and node.height == expected), expected
 
-
     def validate_balance_factors(self):
         return self._validate_bf_rec(self.root)
-
 
     def _validate_bf_rec(self, node):
         if node is None or not node.is_real_node():
@@ -687,7 +667,7 @@ class AVLTree(object):
 
         criminal_node.right = child_node.left
         child_node.left = criminal_node
-        
+
         if criminal_node.right.is_real_node():
             criminal_node.right.parent = criminal_node
 
@@ -710,7 +690,7 @@ class AVLTree(object):
 
         criminal_node.right = grandchild_node.left
         child_node.left = grandchild_node.right
-        
+
         if criminal_node.right.is_real_node():
             criminal_node.right.parent = criminal_node
         if child_node.left.is_real_node():
@@ -789,8 +769,6 @@ class AVLTree(object):
     # ====================================================================
 
 
-
-
 def build_avl_from_list(lst):
     """
     Helper: build an AVLTree from a list of (key, value) pairs.
@@ -867,10 +845,7 @@ def test_join_same_height():
 def test_join_left_taller():
     print("\n================= test_join_left_taller =================")
     # Make left tree clearly taller
-    T_left = build_avl_from_list([
-        (1, "1"), (2, "2"), (3, "3"), (4, "4"),
-        (5, "5"), (6, "6"), (7, "7"), (8, "8")
-    ])
+    T_left = build_avl_from_list([(1, "1"), (2, "2"), (3, "3"), (4, "4"), (5, "5"), (6, "6"), (7, "7"), (8, "8")])
     T_right = build_avl_from_list([(20, "20"), (25, "25")])
 
     print("Left tree (taller):")
@@ -890,10 +865,7 @@ def test_join_right_taller():
     print("\n================= test_join_right_taller =================")
     # Mirror: right tree taller
     T_left = build_avl_from_list([(1, "1"), (2, "2"), (3, "3")])
-    T_right = build_avl_from_list([
-        (20, "20"), (21, "21"), (22, "22"),
-        (23, "23"), (24, "24"), (25, "25")
-    ])
+    T_right = build_avl_from_list([(20, "20"), (21, "21"), (22, "22"), (23, "23"), (24, "24"), (25, "25")])
 
     print("Left tree (shorter):")
     T_left.print_tree()
@@ -971,7 +943,7 @@ if __name__ == "__main__":
     test_join_random_like()
 
     print("All join tests finished.")
-    
+
 if __name__ == "__main__":
 
     # ---------- Case 1: same height on both sides ----------
@@ -1031,7 +1003,7 @@ if __name__ == "__main__":
     print("F:")
     F.print_tree()
 
-    E.join(F, 9, "9")   # here self is the smaller (left) tree
+    E.join(F, 9, "9")  # here self is the smaller (left) tree
     print("Joined tree (right taller):")
     E.print_tree()
     print("valid height =", E.validate_heights())
@@ -1069,7 +1041,7 @@ if __name__ == "__main__":
 ##    T1.insert(4, "4")
 ##    T1.insert(11, "11")
 ##    T1.print_tree()
-##    
+##
 ##    T2 = AVLTree()
 ##    T2.insert(20, "20")
 ##    T2.insert(24, "24")
@@ -1085,7 +1057,7 @@ if __name__ == "__main__":
 ##    print("Tree after join")
 ##    T1.print_tree()
 
-    ##finger insertions test
+##finger insertions test
 ##    T2 = AVLTree()
 ##    T2.finger_insert(15, "15")
 ##    T2.finger_insert(10, "10")
@@ -1104,7 +1076,7 @@ if __name__ == "__main__":
 ##    T2.finger_insert(5, "5")
 ##    T2.print_tree()
 
-    ##other tests
+##other tests
 ##    print(T.size())
 ##    print(T.avl_to_array())
 ##    print(T.get_root().value)
@@ -1112,9 +1084,6 @@ if __name__ == "__main__":
 ##    print(T.validate_heights())
 ##    print(T.validate_balance_factors())
 ##    T.print_tree()
-
-
-
 
 
 ##if __name__ == "__main__":
@@ -1185,7 +1154,7 @@ if __name__ == "__main__":
 ##    T1.insert(4, "4")
 ##    T1.insert(11, "11")
 ##    T1.print_tree()
-##    
+##
 ##    T2 = AVLTree()
 ##    T2.insert(20, "20")
 ##    T2.insert(24, "24")
@@ -1197,7 +1166,7 @@ if __name__ == "__main__":
 ##
 ##    T1.join(T2, 17, "17")
 
-    ##finger insertions test
+##finger insertions test
 ##    T2 = AVLTree()
 ##    T2.finger_insert(15, "15")
 ##    T2.finger_insert(10, "10")
@@ -1216,7 +1185,7 @@ if __name__ == "__main__":
 ##    T2.finger_insert(5, "5")
 ##    T2.print_tree()
 
-    ##other tests
+##other tests
 ##    print(T.size())
 ##    print(T.avl_to_array())
 ##    print(T.get_root().value)
@@ -1224,4 +1193,3 @@ if __name__ == "__main__":
 ##    print(T.validate_heights())
 ##    print(T.validate_balance_factors())
 ##    T.print_tree()
-
