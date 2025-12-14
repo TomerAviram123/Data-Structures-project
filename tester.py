@@ -1,11 +1,11 @@
-'''
-    In order to run the tester:
-    1.  Make sure your AVLTree.py file and this file
-        are both in the same directory.
-    2.  Run: python3 student_tester.py
-    3.  Your grade will be printed at the end.
-        Only failed tests will be printed.
-'''
+"""
+In order to run the tester:
+1.  Make sure your AVLTree.py file and this file
+    are both in the same directory.
+2.  Run: python3 student_tester.py
+3.  Your grade will be printed at the end.
+    Only failed tests will be printed.
+"""
 
 import unittest
 from AVLTree import AVLTree
@@ -115,4 +115,3 @@ if __name__ == "__main__":
 
     print("\nGrade:", GRADE, "/", MAX_GRADE)
     print("==============================")
-

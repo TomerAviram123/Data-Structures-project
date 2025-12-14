@@ -9,6 +9,9 @@
 """A class represnting a node in an AVL tree"""
 
 
+import random
+
+
 class AVLNode(object):
     """Constructor, you are allowed to add more fields.
 
@@ -25,6 +28,7 @@ class AVLNode(object):
         self.right = None
         self.parent = None
         self.height = -1
+        self.size = 0
 
     """returns whether self is not a virtual node 
 
@@ -67,7 +71,7 @@ class AVLTree(object):
         if node is None:
             return None, -1
 
-        if node.is_real_node() == False:
+        if not node.is_real_node():
             return None, -1
 
         while node.is_real_node():
@@ -75,13 +79,13 @@ class AVLTree(object):
                 return node, arcs
 
             elif node.key > key:
-                if node.left.is_real_node() == False is None:
+                if not node.left.is_real_node():
                     return None, -1
                 else:
                     node = node.left
 
             elif node.key < key:
-                if node.right.is_real_node() == False:
+                if not node.right.is_real_node():
                     return None, -1
                 else:
                     node = node.right
@@ -102,8 +106,6 @@ class AVLTree(object):
         arcs = 1
 
         # ======== Traverse Up ======================
-        continue_ = True
-        print(node.key)
         while node != self.root:
             if node.key == key:
                 return node, arcs
@@ -114,16 +116,16 @@ class AVLTree(object):
             arcs += 1
 
         # ======== Traverse down ======================
-        while node.is_real_node():
+        while node is not None and node.is_real_node():
             if node.key == key:
                 return node, arcs
             elif node.key > key:
-                if node.left.is_real_node() == False is None:
+                if not node.left.is_real_node():
                     return None, -1
                 else:
                     node = node.left
             elif node.key < key:
-                if node.right.is_real_node() == False:
+                if not node.right.is_real_node():
                     return None, -1
                 else:
                     node = node.right
@@ -146,7 +148,7 @@ class AVLTree(object):
 
         # simple insertion
         x, e = self.simple_insert(self.root, key, val)
-        self.set_heights_from_node_up(x)
+        self.set_heights_and_sizes_from_node_up(x)
         h = 0
 
         # update tree max, size
@@ -177,19 +179,18 @@ class AVLTree(object):
         arcs = 0
         node = self.root
         if self.root is not None:
-            continue_ = True
             node = self._max_node
-            while node != self.root and continue_:
+            while node != self.root:
                 if key < node.parent.key:
                     node = node.parent
+                    arcs += 1
                 else:
-                    continue_ = False
-                arcs += 1
+                    break
 
         # Simple insert from the common node
         x, e = self.simple_insert(node, key, val)
         e += arcs
-        self.set_heights_from_node_up(x)
+        self.set_heights_and_sizes_from_node_up(x)
 
         # update tree max, size
         self._size += 1
@@ -222,7 +223,8 @@ class AVLTree(object):
 
         # update tree max, size
         self._size -= 1
-        if self._max_node == node:
+        # if self._max_node == node and self.root is not None:
+        if self._max_node == node and self.root is not None:
             iter_node = self.root
             while iter_node.right.is_real_node():
                 iter_node = iter_node.right
@@ -248,6 +250,8 @@ class AVLTree(object):
             new_root.left = self.virtual_node
             new_root.right = self.virtual_node
             new_root.height = 0
+            new_root.size = 1
+            new_root.parent = None
             self.root = new_root
             self._size = 1
             self._max_node = new_root
@@ -292,6 +296,7 @@ class AVLTree(object):
         new_node.left = self.virtual_node
         new_node.right = self.virtual_node
         new_node.height = 0
+        new_node.size = 1
 
         root_after = None
 
@@ -302,6 +307,8 @@ class AVLTree(object):
             left_tree_root.parent = new_node
             right_tree_root.parent = new_node
             new_node.height = 1 + max(h_left, h_right)
+            new_node.size = 1 + left_tree_root.size + right_tree_root.size
+            new_node.parent = None
 
             root_after = new_node
 
@@ -325,7 +332,8 @@ class AVLTree(object):
 
             # Update heights and balance
             new_node.height = 1 + max(new_node.left.height, new_node.right.height)
-            left_tree.set_heights_from_node_up(new_node)
+            new_node.size = 1 + new_node.left.size + new_node.right.size
+            left_tree.set_heights_and_sizes_from_node_up(new_node)
             left_tree.tree_balancer(new_node)
 
             # Find root by traversing up from new_node
@@ -353,7 +361,8 @@ class AVLTree(object):
 
             # Update heights and balance
             new_node.height = 1 + max(new_node.left.height, new_node.right.height)
-            right_tree.set_heights_from_node_up(new_node)
+            new_node.size = 1 + new_node.left.size + new_node.right.size
+            right_tree.set_heights_and_sizes_from_node_up(new_node)
             right_tree.tree_balancer(new_node)
 
             # Find root by traversing up from new_node
@@ -381,7 +390,67 @@ class AVLTree(object):
         dictionary smaller than node.key, and right is an AVLTree representing the keys in the
         dictionary larger than node.key.
         """
-        return None, None
+        left_tree = AVLTree()
+        right_tree = AVLTree()
+
+        if node.left.is_real_node():
+            left_tree.root = node.left
+            node.left.parent = None
+            left_tree._size = node.left.size
+        if node.right.is_real_node():
+            right_tree.root = node.right
+            node.right.parent = None
+            right_tree._size = node.right.size
+        for tree in [left_tree, right_tree]:
+            max_node = tree.root
+            if tree.root is not None:
+                while max_node.right.is_real_node():
+                    max_node = max_node.right
+            tree._max_node = max_node
+
+        current = node
+
+        while current.parent is not None:
+            parent = current.parent
+            key = parent.key
+            val = parent.value
+            temp_tree = AVLTree()
+
+            # Went Left
+            if parent.right is current:
+                if parent.left.is_real_node():
+                    temp_tree.root = parent.left
+                    parent.left.parent = None
+                    temp_tree._size = parent.left.size
+
+                    # Find max
+                    max_node = temp_tree.root
+                    while max_node.right.is_real_node():
+                        max_node = max_node.right
+                    temp_tree._max_node = max_node
+
+                    left_tree.join(temp_tree, key, val)
+                else:
+                    left_tree.insert(key, val)
+            else:  # Went Right
+                if parent.right.is_real_node():
+                    temp_tree.root = parent.right
+                    parent.right.parent = None
+                    temp_tree._size = parent.right.size
+
+                    # Find max
+                    max_node = temp_tree.root
+                    while max_node.right.is_real_node():
+                        max_node = max_node.right
+                    temp_tree._max_node = max_node
+
+                    right_tree.join(temp_tree, key, val)
+                else:
+                    right_tree.insert(key, val)
+
+            current = parent
+
+        return left_tree, right_tree
 
     def avl_to_array(self):
         """returns an array representing dictionary
@@ -413,7 +482,6 @@ class AVLTree(object):
     # ==================== HELPER FUNCTIONS =============================
 
     def tree_balancer(self, start_node, arg="Default"):
-
         h = 0
 
         criminal_node = start_node
@@ -433,11 +501,11 @@ class AVLTree(object):
                     child_node = criminal_node.right
                     child_node_bf = child_node.left.height - child_node.right.height
 
-                    if child_node_bf == -1 or not child_node.right.is_real_node():  # left rotation
+                    if child_node_bf in [-1, 0]:  # left rotation
                         self.left_rotation(criminal_node, child_node)
                         h = 1
 
-                    elif child_node_bf in [0, 1]:  # right then left rotation
+                    elif child_node_bf == 1:  # right then left rotation
                         grandchild_node = child_node.left
                         self.right_then_left_rotation(criminal_node, child_node, grandchild_node)
                         h = 2
@@ -462,10 +530,11 @@ class AVLTree(object):
 
         return h
 
-    def set_heights_from_node_up(self, node):
-
+    def set_heights_and_sizes_from_node_up(self, node):
+        """Update both height and size from node up to root"""
         while node is not None and node.is_real_node():
             node.height = max(node.left.height, node.right.height) + 1
+            node.size = node.left.size + node.right.size + 1
             node = node.parent
 
         return
@@ -478,6 +547,7 @@ class AVLTree(object):
             new_node = AVLNode(key, val)
             self.root = new_node
             self.root.height = 0
+            self.root.size = 1
             self.root.right = self.virtual_node
             self.root.left = self.virtual_node
             self._max_node = self.root
@@ -492,6 +562,7 @@ class AVLTree(object):
                         new_node = AVLNode(key, val)
                         new_node.parent = node
                         new_node.height = 0
+                        new_node.size = 1
                         new_node.left = self.virtual_node
                         new_node.right = self.virtual_node
                         node.right = new_node
@@ -503,6 +574,7 @@ class AVLTree(object):
                         new_node = AVLNode(key, val)
                         new_node.parent = node
                         new_node.height = 0
+                        new_node.size = 1
                         new_node.left = self.virtual_node
                         new_node.right = self.virtual_node
                         node.left = new_node
@@ -511,76 +583,185 @@ class AVLTree(object):
         return new_node, arcs
 
     def simple_delete(self, node):
-
         if node is None or not node.is_real_node():
             return self.virtual_node, None
 
-        ##first case - node is leaf
-
-        if node is not self.root and node.parent is not None:
-            y_node, original_y_parent = node.parent, node.parent.left
-
+        # CASE 1: Node is a leaf
         if not node.left.is_real_node() and not node.right.is_real_node():
+            if node == self.root:
+                self.root = None
+                return self.virtual_node, None
 
-            if node.parent.left == node:
-                node.parent.left = self.virtual_node
-            elif node.parent.right == node:
-                node.parent.right = self.virtual_node
+            parent = node.parent
+            if parent.left == node:
+                parent.left = self.virtual_node
+            else:
+                parent.right = self.virtual_node
 
-            self.set_heights_from_node_up(node.parent)
+            self.set_heights_and_sizes_from_node_up(parent)
+            return parent, parent
 
-        ##second case - node has one child
-        elif node.right.is_real_node() and not node.left.is_real_node():  # has right child
+        # CASE 2: Node has only right child
+        elif node.right.is_real_node() and not node.left.is_real_node():
+            if node == self.root:
+                self.root = node.right
+                node.right.parent = None
+                return node.right, None
 
-            if node.parent.left == node:
-                node.parent.left = node.right
-            elif node.parent.right == node:
-                node.parent.right = node.right
+            parent = node.parent
+            if parent.left == node:
+                parent.left = node.right
+            else:
+                parent.right = node.right
+            node.right.parent = parent
 
-            self.set_heights_from_node_up(node.parent)
+            self.set_heights_and_sizes_from_node_up(parent)
+            return parent, parent
 
-        elif node.left.is_real_node() and not node.right.is_real_node():  # has left child
+        # CASE 3: Node has only left child
+        elif node.left.is_real_node() and not node.right.is_real_node():
+            if node == self.root:
+                self.root = node.left
+                node.left.parent = None
+                return node.left, None
 
-            if node.parent.left == node:
-                node.parent.left = node.left
-            elif node.parent.right == node:
-                node.parent.right = node.left
+            parent = node.parent
+            if parent.left == node:
+                parent.left = node.left
+            else:
+                parent.right = node.left
+            node.left.parent = parent
 
-            self.set_heights_from_node_up(node.parent)
+            self.set_heights_and_sizes_from_node_up(parent)
+            return parent, parent
 
-        ##third case - node has two children
-        elif node.right.is_real_node() and node.left.is_real_node():
+        # CASE 4: Node has two children
+        else:
+            successor = node.right
+            while successor.left.is_real_node():
+                successor = successor.left
 
-            iter_node = node.right
+            successor_parent = successor.parent
 
-            while iter_node.left.is_real_node():
-                iter_node = iter_node.left
-            y_node, original_y_parent = iter_node, iter_node.parent
-            iter_node.right.parent = iter_node.parent
-            iter_node.parent.left = iter_node.right
+            # If successor is the direct right child of node
+            if successor == node.right:
+                if node == self.root:
+                    self.root = successor
+                    successor.parent = None
+                else:
+                    if node.parent.left == node:
+                        node.parent.left = successor
+                    else:
+                        node.parent.right = successor
+                    successor.parent = node.parent
 
-            if node.parent.left == node:
-                node.parent.left = iter_node
-            elif node.parent.right == node:
-                node.parent.right = iter_node
+                successor.left = node.left
+                if node.left.is_real_node():
+                    node.left.parent = successor
 
-            height_check_node = iter_node.parent.right
-            iter_node.parent = node.parent
-            iter_node.left = node.left
-            iter_node.right = node.right
-            node.left.parent = iter_node
-            node.right.parent = iter_node
+                self.set_heights_and_sizes_from_node_up(successor)
+                return successor, successor
 
-            self.set_heights_from_node_up(height_check_node)
+            # Successor is deeper in the tree
+            else:
+                # Unlink successor from its parent
+                successor_parent.left = successor.right
+                if successor.right.is_real_node():
+                    successor.right.parent = successor_parent
 
-        return y_node, original_y_parent
+                # Replace node with successor
+                if node == self.root:
+                    self.root = successor
+                    successor.parent = None
+                else:
+                    if node.parent.left == node:
+                        node.parent.left = successor
+                    else:
+                        node.parent.right = successor
+                    successor.parent = node.parent
+
+                # Successor takes node's children
+                successor.left = node.left
+                successor.right = node.right
+                if node.left.is_real_node():
+                    node.left.parent = successor
+                if node.right.is_real_node():
+                    node.right.parent = successor
+
+                self.set_heights_and_sizes_from_node_up(successor_parent)
+                return successor, successor_parent
+
+        # def simple_delete(self, node):
+
+        # if node is None or not node.is_real_node():
+        #     return self.virtual_node, None
+
+        # ##first case - node is leaf
+
+        # if node is not self.root and node.parent is not None:
+        #     y_node, original_y_parent = node.parent, node.parent.left
+
+        # if not node.left.is_real_node() and not node.right.is_real_node():
+
+        #     if node.parent.left == node:
+        #         node.parent.left = self.virtual_node
+        #     elif node.parent.right == node:
+        #         node.parent.right = self.virtual_node
+
+        #     self.set_heights_and_sizes_from_node_up(node.parent)
+
+        # ##second case - node has one child
+        # elif node.right.is_real_node() and not node.left.is_real_node():  # has right child
+
+        #     if node.parent.left == node:
+        #         node.parent.left = node.right
+        #     elif node.parent.right == node:
+        #         node.parent.right = node.right
+
+        #     self.set_heights_and_sizes_from_node_up(node.parent)
+
+        # elif node.left.is_real_node() and not node.right.is_real_node():  # has left child
+
+        #     if node.parent.left == node:
+        #         node.parent.left = node.left
+        #     elif node.parent.right == node:
+        #         node.parent.right = node.left
+
+        #     self.set_heights_and_sizes_from_node_up(node.parent)
+
+        # ##third case - node has two children
+        # elif node.right.is_real_node() and node.left.is_real_node():
+
+        #     iter_node = node.right
+
+        #     while iter_node.left.is_real_node():
+        #         iter_node = iter_node.left
+        #     y_node, original_y_parent = iter_node, iter_node.parent
+        #     iter_node.right.parent = iter_node.parent
+        #     iter_node.parent.left = iter_node.right
+
+        #     if node.parent.left == node:
+        #         node.parent.left = iter_node
+        #     elif node.parent.right == node:
+        #         node.parent.right = iter_node
+
+        #     height_check_node = iter_node.parent.right
+        #     iter_node.parent = node.parent
+        #     iter_node.left = node.left
+        #     iter_node.right = node.right
+        #     node.left.parent = iter_node
+        #     node.right.parent = iter_node
+
+        #     self.set_heights_and_sizes_from_node_up(height_check_node)
+
+        # return y_node, original_y_parent
 
     # ====================================================================
 
     # ========== Validating and testing functions ========================
 
     def _create_in_order_list(self, x, lst=None):
-        if not x.is_real_node():
+        if not x or not x.is_real_node():
             return
         self._create_in_order_list(x.left, lst)
         lst.append((x.key, x.value))
@@ -610,6 +791,8 @@ class AVLTree(object):
             self.print_tree(node.left, new_indent, True)
 
     def validate_heights(self):
+        if self.root is None:
+            return True
         ok, _ = self._validate_heights_rec(self.root)
         return ok
 
@@ -655,24 +838,24 @@ class AVLTree(object):
 
         if criminal_node is self.root:
             self.root = child_node
-            criminal_node.parent = child_node
             child_node.parent = None
+
         else:  # swap_correct_son(criminal.parent, child) function
             if criminal_node.parent.left == criminal_node:
                 criminal_node.parent.left = child_node
             else:
                 criminal_node.parent.right = child_node
             child_node.parent = criminal_node.parent
-            criminal_node.parent = child_node
 
         criminal_node.right = child_node.left
-        child_node.left = criminal_node
-
         if criminal_node.right.is_real_node():
             criminal_node.right.parent = criminal_node
 
-        criminal_node.height = criminal_node.height - 2
-        self.set_heights_from_node_up(criminal_node)
+        child_node.left = criminal_node
+        criminal_node.parent = child_node
+
+        # criminal_node.height = criminal_node.height - 2
+        self.set_heights_and_sizes_from_node_up(criminal_node)
 
         return
 
@@ -680,13 +863,13 @@ class AVLTree(object):
 
         if criminal_node is self.root:
             self.root = grandchild_node
+            grandchild_node.parent = None
         else:  # swap_correct_son(criminal.parent, child) function
             if criminal_node.parent.left == criminal_node:
                 criminal_node.parent.left = grandchild_node
             else:
                 criminal_node.parent.right = grandchild_node
-
-        grandchild_node.parent = criminal_node.parent
+            grandchild_node.parent = criminal_node.parent
 
         criminal_node.right = grandchild_node.left
         child_node.left = grandchild_node.right
@@ -696,16 +879,16 @@ class AVLTree(object):
         if child_node.left.is_real_node():
             child_node.left.parent = child_node
 
-        grandchild_node.right = child_node
         grandchild_node.left = criminal_node
+        grandchild_node.right = child_node
 
         criminal_node.parent = grandchild_node
         child_node.parent = grandchild_node
 
-        criminal_node.height = criminal_node.height - 2
-        self.set_heights_from_node_up(criminal_node)
-        child_node.height = child_node.height - 1
-        self.set_heights_from_node_up(child_node)
+        # criminal_node.height = criminal_node.height - 2
+        self.set_heights_and_sizes_from_node_up(criminal_node)
+        # child_node.height = child_node.height - 1
+        self.set_heights_and_sizes_from_node_up(child_node)
 
         return
 
@@ -713,16 +896,17 @@ class AVLTree(object):
 
         if criminal_node is self.root:
             self.root = grandchild_node
+            grandchild_node.parent = None
         else:  # swap_correct_son(criminal.parent, child) function
             if criminal_node.parent.left == criminal_node:
                 criminal_node.parent.left = grandchild_node
             else:
                 criminal_node.parent.right = grandchild_node
-
-        grandchild_node.parent = criminal_node.parent
+            grandchild_node.parent = criminal_node.parent
 
         criminal_node.left = grandchild_node.right
         child_node.right = grandchild_node.left
+
         if criminal_node.left.is_real_node():
             criminal_node.left.parent = criminal_node
         if child_node.right.is_real_node():
@@ -734,10 +918,10 @@ class AVLTree(object):
         criminal_node.parent = grandchild_node
         child_node.parent = grandchild_node
 
-        criminal_node.height = criminal_node.height - 2
-        self.set_heights_from_node_up(criminal_node)
-        child_node.height = child_node.height - 1
-        self.set_heights_from_node_up(child_node)
+        # criminal_node.height = criminal_node.height - 2
+        self.set_heights_and_sizes_from_node_up(criminal_node)
+        # child_node.height = child_node.height - 1
+        self.set_heights_and_sizes_from_node_up(child_node)
 
         return
 
@@ -745,7 +929,6 @@ class AVLTree(object):
 
         if criminal_node is self.root:
             self.root = child_node
-            criminal_node.parent = child_node
             child_node.parent = None
         else:  # swap_correct_son(criminal.parent, child) function
             if criminal_node.parent.left == criminal_node:
@@ -753,16 +936,15 @@ class AVLTree(object):
             else:
                 criminal_node.parent.right = child_node
             child_node.parent = criminal_node.parent
-            criminal_node.parent = child_node
 
         criminal_node.left = child_node.right
-        child_node.right = criminal_node
-
         if criminal_node.left.is_real_node():
             criminal_node.left.parent = criminal_node
+        child_node.right = criminal_node
+        criminal_node.parent = child_node
 
-        criminal_node.height = criminal_node.height - 2
-        self.set_heights_from_node_up(criminal_node)
+        # criminal_node.height = criminal_node.height - 2
+        self.set_heights_and_sizes_from_node_up(criminal_node)
 
         return
 
@@ -931,6 +1113,119 @@ def test_join_random_like():
     assert keys == sorted(left_keys + right_keys + [sep_key])
 
 
+def test_split_basic():
+    print("\n================= test_split_basic =================")
+    T = build_avl_from_list([(1, "1"), (2, "2"), (3, "3"), (4, "4"), (5, "5")])
+    node, _ = T.search(3)
+    left, right = T.split(node)
+
+    assert check_avl(left, "split left tree")
+    assert check_avl(right, "split right tree")
+
+    left_keys = [k for k, _ in left.avl_to_array()]
+    right_keys = [k for k, _ in right.avl_to_array()]
+
+    assert left_keys == [1, 2]
+    assert right_keys == [4, 5]
+
+
+def test_split_at_root():
+    print("\n================= test_split_at_root =================")
+    T = build_avl_from_list([(1, "1"), (2, "2"), (3, "3"), (4, "4"), (5, "5"), (6, "6"), (7, "7")])
+    root = T.get_root()
+    left, right = T.split(root)
+
+    assert check_avl(left, "split at root - left")
+    assert check_avl(right, "split at root - right")
+
+    left_keys = [k for k, _ in left.avl_to_array()]
+    right_keys = [k for k, _ in right.avl_to_array()]
+
+    assert all(k < root.key for k in left_keys)
+    assert all(k > root.key for k in right_keys)
+    assert len(left_keys) + len(right_keys) == 6  # All except root
+
+
+def test_split_at_leaf():
+    print("\n================= test_split_at_leaf =================")
+    T = build_avl_from_list([(1, "1"), (2, "2"), (3, "3"), (4, "4"), (5, "5")])
+    node, _ = T.search(1)
+    left, right = T.split(node)
+
+    assert check_avl(left, "split at leaf - left")
+    assert check_avl(right, "split at leaf - right")
+
+    left_keys = [k for k, _ in left.avl_to_array()]
+    right_keys = [k for k, _ in right.avl_to_array()]
+
+    assert left_keys == []
+    assert right_keys == [2, 3, 4, 5]
+
+
+def test_split_at_max():
+    print("\n================= test_split_at_max =================")
+    T = build_avl_from_list([(1, "1"), (2, "2"), (3, "3"), (4, "4"), (5, "5")])
+    node, _ = T.search(5)
+    left, right = T.split(node)
+
+    assert check_avl(left, "split at max - left")
+    assert check_avl(right, "split at max - right")
+
+    left_keys = [k for k, _ in left.avl_to_array()]
+    right_keys = [k for k, _ in right.avl_to_array()]
+
+    assert left_keys == [1, 2, 3, 4]
+    assert right_keys == []
+
+
+def test_split_large_tree():
+    print("\n================= test_split_large_tree =================")
+    keys = list(range(1, 32))  # 1 to 31
+    random.shuffle(keys)
+    T = build_avl_from_list([(k, str(k)) for k in keys])
+
+    node, _ = T.search(16)
+    left, right = T.split(node)
+
+    assert check_avl(left, "split large - left")
+    assert check_avl(right, "split large - right")
+
+    left_keys = [k for k, _ in left.avl_to_array()]
+    right_keys = [k for k, _ in right.avl_to_array()]
+
+    assert left_keys == list(range(1, 16))
+    assert right_keys == list(range(17, 32))
+    assert left.size() == 15
+    assert right.size() == 15
+
+
+def test_large_tree_operations():
+    """Stress test with large tree"""
+    print("\n================= test_large_tree_operations =================")
+    n = 200
+    keys = list(range(1, n + 1))
+    random.shuffle(keys)
+
+    T = build_avl_from_list([(k, str(k)) for k in keys])
+
+    assert T.size() == n
+    assert check_avl(T, "large tree after insertions")
+
+    # Search for random keys
+    for _ in range(20):
+        k = random.randint(1, n)
+        node, _ = T.search(k)
+        assert node is not None and node.key == k
+
+    # Delete some nodes
+    for k in keys[:50]:
+        node, _ = T.search(k)
+        if node:
+            T.delete(node)
+
+    assert check_avl(T, "large tree after deletions")
+
+
 if __name__ == "__main__":
     # run all tests
     test_join_case_empty_trees()
@@ -941,10 +1236,16 @@ if __name__ == "__main__":
     test_join_right_taller()
     test_join_chain()
     test_join_random_like()
+    test_split_basic()
+    test_split_at_root()
+    test_split_at_leaf()
+    test_split_at_max()
+    test_split_large_tree()
+    test_large_tree_operations()
 
     print("All join tests finished.")
 
-if __name__ == "__main__":
+if __name__ == "__new__":
 
     # ---------- Case 1: same height on both sides ----------
     print("=== Case 1: same height ===")
@@ -1140,7 +1441,7 @@ if __name__ == "__main__":
 ##    T.print_tree()
 ##    """
 ##    criminal_node.height = criminal_node.height - 2
-##    self.set_heights_from_node_up(criminal_node, 'Rotation')
+##    self.set_heights_and_sizes_from_node_up(criminal_node, 'Rotation')
 ##
 ##    # ====================================================================
 ##
