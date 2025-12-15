@@ -334,7 +334,13 @@ class AVLTree(object):
             new_node.height = 1 + max(new_node.left.height, new_node.right.height)
             new_node.size = 1 + new_node.left.size + new_node.right.size
             left_tree.set_heights_and_sizes_from_node_up(new_node)
+            left_tree.set_heights_from_node_up(new_node)
             left_tree.tree_balancer(new_node)
+    
+            # Find root by traversing up from new_node
+            root_after = new_node
+            while root_after.parent is not None:
+                root_after = root_after.parent
 
             # Find root by traversing up from new_node
             root_after = new_node
@@ -363,6 +369,7 @@ class AVLTree(object):
             new_node.height = 1 + max(new_node.left.height, new_node.right.height)
             new_node.size = 1 + new_node.left.size + new_node.right.size
             right_tree.set_heights_and_sizes_from_node_up(new_node)
+            right_tree.set_heights_from_node_up(new_node)
             right_tree.tree_balancer(new_node)
 
             # Find root by traversing up from new_node
@@ -370,6 +377,7 @@ class AVLTree(object):
             while root_after.parent is not None:
                 root_after = root_after.parent
 
+        
         self.root = root_after
 
         # update size and recompute max_node
@@ -506,6 +514,7 @@ class AVLTree(object):
                         h = 1
 
                     elif child_node_bf == 1:  # right then left rotation
+                    elif child_node_bf in [0, 1]:  # right then left rotation
                         grandchild_node = child_node.left
                         self.right_then_left_rotation(criminal_node, child_node, grandchild_node)
                         h = 2
@@ -532,6 +541,9 @@ class AVLTree(object):
 
     def set_heights_and_sizes_from_node_up(self, node):
         """Update both height and size from node up to root"""
+
+    def set_heights_from_node_up(self, node):
+
         while node is not None and node.is_real_node():
             node.height = max(node.left.height, node.right.height) + 1
             node.size = node.left.size + node.right.size + 1
@@ -856,6 +868,13 @@ class AVLTree(object):
 
         # criminal_node.height = criminal_node.height - 2
         self.set_heights_and_sizes_from_node_up(criminal_node)
+        child_node.left = criminal_node
+        
+        if criminal_node.right.is_real_node():
+            criminal_node.right.parent = criminal_node
+
+        criminal_node.height = criminal_node.height - 2
+        self.set_heights_from_node_up(criminal_node)
 
         return
 
@@ -874,6 +893,9 @@ class AVLTree(object):
         criminal_node.right = grandchild_node.left
         child_node.left = grandchild_node.right
 
+        criminal_node.right = grandchild_node.left
+        child_node.left = grandchild_node.right
+        
         if criminal_node.right.is_real_node():
             criminal_node.right.parent = criminal_node
         if child_node.left.is_real_node():
@@ -889,6 +911,10 @@ class AVLTree(object):
         self.set_heights_and_sizes_from_node_up(criminal_node)
         # child_node.height = child_node.height - 1
         self.set_heights_and_sizes_from_node_up(child_node)
+        criminal_node.height = criminal_node.height - 2
+        self.set_heights_from_node_up(criminal_node)
+        child_node.height = child_node.height - 1
+        self.set_heights_from_node_up(child_node)
 
         return
 
@@ -922,6 +948,10 @@ class AVLTree(object):
         self.set_heights_and_sizes_from_node_up(criminal_node)
         # child_node.height = child_node.height - 1
         self.set_heights_and_sizes_from_node_up(child_node)
+        criminal_node.height = criminal_node.height - 2
+        self.set_heights_from_node_up(criminal_node)
+        child_node.height = child_node.height - 1
+        self.set_heights_from_node_up(child_node)
 
         return
 
@@ -945,6 +975,11 @@ class AVLTree(object):
 
         # criminal_node.height = criminal_node.height - 2
         self.set_heights_and_sizes_from_node_up(criminal_node)
+        if criminal_node.left.is_real_node():
+            criminal_node.left.parent = criminal_node
+
+        criminal_node.height = criminal_node.height - 2
+        self.set_heights_from_node_up(criminal_node)
 
         return
 
