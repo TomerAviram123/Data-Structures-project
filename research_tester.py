@@ -43,6 +43,16 @@ def generate_array(i, test_type=TestType.ORDERD_ARRAY, base=N):
             yield num
 
 
+def count_reversals(i, test_type=TestType.ORDERD_ARRAY, base=N):
+    arr = list(generate_array(i, test_type))
+    total_reversals = 0
+    for j in range(len(arr)):
+        for k in range(j + 1, len(arr)):
+            if arr[j] > arr[k]:
+                total_reversals += 1
+    return total_reversals
+
+
 def part_1():
     results = {test_type: {} for test_type in TestType.to_list()}
     for test_type in TestType.to_list():
@@ -69,7 +79,23 @@ def part_1():
 
 
 def part_2():
-    pass
+    results = {test_type: {} for test_type in TestType.to_list()}
+    for test_type in TestType.to_list():
+        print(f"Starting tests of type {test_type}")
+        for i in range(1, I - 5 + 1):
+            print(f"Running test {i} with array size {N} * 2 ** {i} = {N * 2 ** i}")
+            results[test_type][i] = count_reversals(i, test_type)
+
+    # Prepare table data
+    test_types = TestType.to_list()[::-1]  # Reverse
+    headers = ["i", "n"] + test_types
+
+    table_data = []
+    for i in range(1, I - 5 + 1):
+        row = [i, N * 2**i] + [results[test_type][i] for test_type in test_types]
+        table_data.append(row)
+
+    print("\n" + tabulate(table_data, headers=headers, tablefmt="grid"))
 
 
 def part_3():
