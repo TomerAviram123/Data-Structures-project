@@ -92,7 +92,6 @@ class AVLTree(object):
 
         return None, arcs
 
-    
     def finger_search(self, key):
         """searches for a node in the dictionary corresponding to the key, starting at the max
 
@@ -133,7 +132,6 @@ class AVLTree(object):
 
         return None, arcs
 
-
     def insert(self, key, val):
         """inserts a new node into the dictionary with corresponding key and value, starting at the max
         @type key: int
@@ -158,7 +156,7 @@ class AVLTree(object):
             original_heights[iter_node] = iter_node.height
             iter_node = iter_node.parent
 
-        #update heights
+        # update heights
         self.set_heights_from_node_up(x)
 
         # remember the heights after the updating
@@ -174,19 +172,18 @@ class AVLTree(object):
         # Balance Tree
         criminal_node = self.tree_balancer(x, "One Balance")
 
-        #compare original heights to the new heights
+        # compare original heights to the new heights
         h = 0
         if criminal_node is None:
             route_to_check_for_promotions = original_route
         else:
-            route_to_check_for_promotions = original_route[:original_route.index(criminal_node)]
+            route_to_check_for_promotions = original_route[: original_route.index(criminal_node)]
         for node in route_to_check_for_promotions:
             if original_heights[node] < updated_heights[node]:
                 h += 1
 
         return x, e, h
 
-    
     def finger_insert(self, key, val):
         """inserts a new node into the dictionary with corresponding key and value, starting at the max
 
@@ -226,7 +223,7 @@ class AVLTree(object):
             iter_node = iter_node.parent
 
         # update heights
-        self.set_heights_and_sizes_from_node_up(x)
+        self.set_heights_from_node_up(x)
 
         # remember the heights after the updating
         updated_heights = {}
@@ -241,19 +238,18 @@ class AVLTree(object):
         # Balance Tree
         criminal_node = self.tree_balancer(x, "One Balance")
 
-        #compare original heights to the new heights
+        # compare original heights to the new heights
         h = 0
         if criminal_node is None:
             route_to_check_for_promotions = original_route
         else:
-            route_to_check_for_promotions = original_route[:original_route.index(criminal_node)]
+            route_to_check_for_promotions = original_route[: original_route.index(criminal_node)]
         for node in route_to_check_for_promotions:
             if original_heights[node] < updated_heights[node]:
                 h += 1
 
         return x, e, h
 
-    
     def delete(self, node):
         """deletes node from the dictionary
 
@@ -569,9 +565,8 @@ class AVLTree(object):
             criminal_node = criminal_node.parent
 
         return node_to_return
-        
 
-    def set_heights_and_sizes_from_node_up(self, node):
+    def set_heights_from_node_up(self, node):
 
         while node is not None and node.is_real_node():
             node.height = max(node.left.height, node.right.height) + 1
@@ -745,7 +740,7 @@ class AVLTree(object):
         #     elif node.parent.right == node:
         #         node.parent.right = self.virtual_node
 
-        #     self.set_heights_and_sizes_from_node_up(node.parent)
+        #     self.set_heights_from_node_up(node.parent)
 
         # ##second case - node has one child
         # elif node.right.is_real_node() and not node.left.is_real_node():  # has right child
@@ -755,7 +750,7 @@ class AVLTree(object):
         #     elif node.parent.right == node:
         #         node.parent.right = node.right
 
-        #     self.set_heights_and_sizes_from_node_up(node.parent)
+        #     self.set_heights_from_node_up(node.parent)
 
         # elif node.left.is_real_node() and not node.right.is_real_node():  # has left child
 
@@ -764,7 +759,7 @@ class AVLTree(object):
         #     elif node.parent.right == node:
         #         node.parent.right = node.left
 
-        #     self.set_heights_and_sizes_from_node_up(node.parent)
+        #     self.set_heights_from_node_up(node.parent)
 
         # ##third case - node has two children
         # elif node.right.is_real_node() and node.left.is_real_node():
@@ -789,7 +784,7 @@ class AVLTree(object):
         #     node.left.parent = iter_node
         #     node.right.parent = iter_node
 
-        #     self.set_heights_and_sizes_from_node_up(height_check_node)
+        #     self.set_heights_from_node_up(height_check_node)
 
         # return y_node, original_y_parent
 
@@ -1476,7 +1471,7 @@ if __name__ == "__new__":
 ##    T.print_tree()
 ##    """
 ##    criminal_node.height = criminal_node.height - 2
-##    self.set_heights_and_sizes_from_node_up(criminal_node, 'Rotation')
+##    self.set_heights_from_node_up(criminal_node, 'Rotation')
 ##
 ##    # ====================================================================
 ##
@@ -1529,4 +1524,3 @@ if __name__ == "__new__":
 ##    print(T.validate_heights())
 ##    print(T.validate_balance_factors())
 ##    T.print_tree()
-
