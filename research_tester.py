@@ -4,6 +4,7 @@ from AVLTree import AVLTree, AVLNode
 
 N = 300
 I = 10
+REPEAT_COUNT = 20
 
 
 class TestType:
@@ -19,6 +20,9 @@ class TestType:
             TestType.RANDOM_ARRAY,
             TestType.RANDOM_SWAP_ARRAY,
         ]
+
+    def is_random_test(test_type):
+        return test_type in [TestType.RANDOM_ARRAY, TestType.RANDOM_SWAP_ARRAY]
 
 
 def generate_array(i, test_type=TestType.ORDERD_ARRAY, base=N):
@@ -57,14 +61,20 @@ def part_1():
     results = {test_type: {} for test_type in TestType.to_list()}
     for test_type in TestType.to_list():
         print(f"Starting tests of type {test_type}")
+        repeat = 1
+        if TestType.is_random_test(test_type):
+            repeat = REPEAT_COUNT
         for i in range(1, I + 1):
-            print(f"Running test {i} with array size {N} * 2 ** {i} = {N * 2 ** i}")
-            tree = AVLTree()
-            total_h = 0
-            for num in generate_array(i, test_type):
-                _, _, h = tree.finger_insert(num, str(num))
-                total_h += h
-            results[test_type][i] = total_h
+            results[test_type][i] = 0
+            for _ in range(repeat):
+                print(f"({_}) Running test {i} with array size {N} * 2 ** {i} = {N * 2 ** i}")
+                tree = AVLTree()
+                total_h = 0
+                for num in generate_array(i, test_type):
+                    _, _, h = tree.finger_insert(num, str(num))
+                    total_h += h
+                results[test_type][i] += total_h
+            results[test_type][i] = results[test_type][i] // repeat
 
     # Prepare table data
     test_types = TestType.to_list()[::-1]  # Reverse
@@ -82,9 +92,15 @@ def part_2():
     results = {test_type: {} for test_type in TestType.to_list()}
     for test_type in TestType.to_list():
         print(f"Starting tests of type {test_type}")
+        repeat = 1
+        if TestType.is_random_test(test_type):
+            repeat = REPEAT_COUNT
         for i in range(1, I - 5 + 1):
-            print(f"Running test {i} with array size {N} * 2 ** {i} = {N * 2 ** i}")
-            results[test_type][i] = count_reversals(i, test_type)
+            results[test_type][i] = 0
+            for _ in range(repeat):
+                print(f"({_}) Running test {i} with array size {N} * 2 ** {i} = {N * 2 ** i}")
+                results[test_type][i] += count_reversals(i, test_type)
+            results[test_type][i] = results[test_type][i] // repeat
 
     # Prepare table data
     test_types = TestType.to_list()[::-1]  # Reverse
@@ -102,14 +118,20 @@ def part_3():
     results = {test_type: {} for test_type in TestType.to_list()}
     for test_type in TestType.to_list():
         print(f"Starting tests of type {test_type}")
+        repeat = 1
+        if TestType.is_random_test(test_type):
+            repeat = REPEAT_COUNT
         for i in range(1, I + 1):
-            print(f"Running test {i} with array size {N} * 2 ** {i} = {N * 2 ** i}")
-            tree = AVLTree()
-            total_e = 0
-            for num in generate_array(i, test_type):
-                _, e, _ = tree.finger_insert(num, str(num))
-                total_e += e
-            results[test_type][i] = total_e
+            results[test_type][i] = 0
+            for _ in range(repeat):
+                print(f"({_}) Running test {i} with array size {N} * 2 ** {i} = {N * 2 ** i}")
+                tree = AVLTree()
+                total_e = 0
+                for num in generate_array(i, test_type):
+                    _, e, _ = tree.finger_insert(num, str(num))
+                    total_e += e
+                results[test_type][i] += total_e
+            results[test_type][i] = results[test_type][i] // repeat
 
     # Prepare table data
     test_types = TestType.to_list()[::-1]  # Reverse
@@ -125,6 +147,10 @@ def part_3():
 
 if __name__ == "__main__":
     tree = AVLTree()
+    print(f"========= Running Part 1 Tests =========")
     part_1()
+    print(f"\n========= Running Part 2 Tests =========")
     part_2()
+    print(f"\n========= Running Part 3 Tests =========")
     part_3()
+    print(f"\n========= All Tests Completed =========")
