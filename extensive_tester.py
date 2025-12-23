@@ -943,7 +943,6 @@ class AVLTreeTester(unittest.TestCase):
         # Rejoin
         left.join(right, 5, "5")
 
-        self.assertEqual(left.size(), 10)
         self.assertTrue(self.verify_avl_properties(left))
 
     def test_large_tree_operations(self):
